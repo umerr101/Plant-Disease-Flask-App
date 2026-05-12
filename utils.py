@@ -33,6 +33,42 @@ def validate_image(image_path):
         return False, f"Invalid image: {str(e)}"
 
 
+def is_leaf_image(image_path, green_ratio_threshold=0.12):
+    """
+    Heuristic check to determine whether an image likely contains a leaf.
+
+    This is a lightweight test that computes the fraction of pixels that are
+    predominantly green (green channel stronger than red and blue by a margin).
+
+    Args:
+        image_path: Path to the image file
+        green_ratio_threshold: Fraction of pixels that must be "green" to
+            consider the image a leaf image (default 0.12 = 12%)
+
+    Returns:
+        bool: True if image likely contains a leaf, False otherwise
+    """
+    try:
+        img = Image.open(image_path).convert('RGB')
+        arr = np.asarray(img, dtype=np.float32) / 255.0
+
+        # compute simple green-pixel mask: G noticeably larger than R and B
+        r = arr[:, :, 0]
+        g = arr[:, :, 1]
+        b = arr[:, :, 2]
+
+        # condition: green is greater than both red and blue by a factor
+        green_mask = (g > 1.05 * r) & (g > 1.05 * b) & (g > 0.12)
+
+        green_fraction = float(np.count_nonzero(
+            green_mask)) / (arr.shape[0] * arr.shape[1])
+
+        return green_fraction >= float(green_ratio_threshold)
+    except Exception:
+        # If anything goes wrong, be conservative and return False
+        return False
+
+
 def get_image_info(image_path):
     """
     Get information about an image

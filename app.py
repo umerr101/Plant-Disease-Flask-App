@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import joblib
 
-from utils import extract_image_features
+from utils import extract_image_features, validate_image, is_leaf_image
 
 app = Flask(__name__)
 
@@ -118,6 +118,26 @@ def predict():
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
+
+        # Validate basic image integrity
+        is_valid, msg = validate_image(filepath)
+        if not is_valid:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid image uploaded: {msg}'
+            }), 400
+
+        # Heuristic leaf-detection: reject non-leaf images
+        try:
+            contains_leaf = is_leaf_image(filepath)
+        except Exception:
+            contains_leaf = False
+
+        if not contains_leaf:
+            return jsonify({
+                'success': False,
+                'error': 'Uploaded image does not appear to contain a leaf. Please upload a clear leaf photo.'
+            }), 400
 
         # Preprocess image
         img_array, original_img = preprocess_image(filepath)
