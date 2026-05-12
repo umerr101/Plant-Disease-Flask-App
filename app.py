@@ -70,6 +70,18 @@ def about():
     return render_template('about.html')
 
 
+@app.route('/results')
+def results():
+    """Results page"""
+    return render_template('results.html')
+
+
+@app.route('/database')
+def database():
+    """Disease database page"""
+    return render_template('database.html')
+
+
 @app.route('/api/predict', methods=['POST'])
 def predict():
     """Handle image upload and prediction"""
